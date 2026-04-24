@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { NearEarthObject } from "@/types/nasa";
 import { formatNumber } from "@/lib/utils";
@@ -9,20 +9,23 @@ import { X, ChevronUp, Database, Activity } from "lucide-react";
 interface ThreatMatrixProps {
   objects: NearEarthObject[];
   selectedId?: string | null;
-  onSelect?: (id: string) => void;
+  onSelect?: (id: string | null) => void;
 }
 
 export function ThreatMatrix({ objects, selectedId, onSelect }: ThreatMatrixProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const sortedObjects = [...objects].sort((a, b) => {
-    if (a.is_potentially_hazardous_asteroid && !b.is_potentially_hazardous_asteroid) return -1;
-    if (!a.is_potentially_hazardous_asteroid && b.is_potentially_hazardous_asteroid) return 1;
-    
-    const distA = parseFloat(a.close_approach_data[0].miss_distance.kilometers);
-    const distB = parseFloat(b.close_approach_data[0].miss_distance.kilometers);
-    return distA - distB;
-  });
+  const sortedObjects = useMemo(() => {
+    return [...objects].sort((a, b) => {
+      // Hazardous objects first
+      if (a.is_potentially_hazardous_asteroid && !b.is_potentially_hazardous_asteroid) return -1;
+      if (!a.is_potentially_hazardous_asteroid && b.is_potentially_hazardous_asteroid) return 1;
+      
+      const distA = parseFloat(a.close_approach_data[0].miss_distance.kilometers);
+      const distB = parseFloat(b.close_approach_data[0].miss_distance.kilometers);
+      return distA - distB;
+    });
+  }, [objects]);
 
   const handleSelect = (id: string) => {
     onSelect?.(id);

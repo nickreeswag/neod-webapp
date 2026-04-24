@@ -12,7 +12,8 @@ interface SolarSystemVisualizerProps {
   selectedId?: string | null;
   onSelect?: (id: string | null) => void;
   simulationSpeed: number;
-  onSpeedChange: (speed: number) => void;
+  simulatedDate: Date;
+  setSimulatedDate: React.Dispatch<React.SetStateAction<Date>>;
 }
 
 // 1 Unit = 10 Lunar Distances (LD)
@@ -28,7 +29,7 @@ interface PlanetProps {
   color: string;
   radius: number;
   size: number;
-  periodFactor: number; // multiplier for Earth's orbital period
+  periodFactor: number;
   initialAngle?: number;
   simulatedTime: number;
 }
@@ -37,7 +38,6 @@ function Planet({ name, color, radius, size, periodFactor, initialAngle = 0, sim
   const meshRef = useRef<THREE.Mesh>(null);
   const [hovered, setHovered] = useState(false);
 
-  // Derive position directly from simulated time for 100% accuracy
   const angle = useMemo(() => {
     const period = EARTH_YEAR_MS * periodFactor;
     return (simulatedTime / period) * Math.PI * 2 + initialAngle;
@@ -45,18 +45,12 @@ function Planet({ name, color, radius, size, periodFactor, initialAngle = 0, sim
 
   useEffect(() => {
     if (meshRef.current) {
-      meshRef.current.position.set(
-        Math.cos(angle) * radius,
-        0,
-        Math.sin(angle) * radius
-      );
+      meshRef.current.position.set(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
     }
   }, [angle, radius]);
 
   useFrame(() => {
-    if (meshRef.current) {
-      meshRef.current.rotation.y += 0.01;
-    }
+    if (meshRef.current) meshRef.current.rotation.y += 0.01;
   });
 
   return (
@@ -81,7 +75,7 @@ function Planet({ name, color, radius, size, periodFactor, initialAngle = 0, sim
         />
         {hovered && (
           <Html>
-            <div className="bg-aura-bg/90 border border-white/20 backdrop-blur-md px-3 py-1.5 rounded-lg pointer-events-none whitespace-nowrap">
+            <div className="bg-aura-bg/90 border border-white/20 backdrop-blur-md px-3 py-1.5 rounded-lg pointer-events-none whitespace-nowrap shadow-2xl">
               <span className="text-white text-[10px] font-bold uppercase tracking-widest">{name}</span>
             </div>
           </Html>
@@ -101,9 +95,6 @@ function Sun() {
         <meshBasicMaterial color="#fbbf24" transparent opacity={0.3} />
       </Sphere>
       <pointLight intensity={15} distance={3000} color="#fffbeb" />
-      <Sphere args={[8, 32, 32]}>
-        <meshBasicMaterial color="#f59e0b" transparent opacity={0.1} />
-      </Sphere>
     </group>
   );
 }
@@ -132,7 +123,6 @@ function Asteroid({ object, index, isSelected, onSelect, simulatedTime }: Astero
     const distFromEarthUnits = missDistLD / SCALE_UNIT;
     const angleOffset = (index * 137.5) * (Math.PI / 180);
     const inclination = (index % 5 - 2) * 0.05;
-    // Estimated asteroid orbital period based on eccentricity and semi-major axis (simplified)
     const periodFactor = 1.0 + (index % 10) * 0.1; 
     return { distFromEarthUnits, angleOffset, inclination, periodFactor };
   }, [missDistLD, index]);
@@ -243,8 +233,7 @@ function SimulationTimeManager({ simulationSpeed, setSimulatedDate }: { simulati
   return null;
 }
 
-export function SolarSystemVisualizer({ objects, selectedId, onSelect, simulationSpeed, onSpeedChange }: SolarSystemVisualizerProps) {
-  const [simulatedDate, setSimulatedDate] = useState(new Date());
+export function SolarSystemVisualizer({ objects, selectedId, onSelect, simulationSpeed, simulatedDate, setSimulatedDate }: SolarSystemVisualizerProps) {
   const selectedMeshPos = useRef<THREE.Vector3>(new THREE.Vector3());
   
   const renderObjects = useMemo(() => {
@@ -309,7 +298,7 @@ export function SolarSystemVisualizer({ objects, selectedId, onSelect, simulatio
       </AnimatePresence>
 
       <div className="absolute inset-0 cursor-crosshair">
-        <Canvas camera={{ position: [0, 200, 300], fov: 45 }} shadows>
+        <Canvas camera={{ position: [0, 200, 300], fov: 45 }} shadows dpr={[1, 2]}>
           <Stars radius={600} depth={50} count={20000} factor={7} saturation={0} fade speed={2} />
           <ambientLight intensity={0.2} />
           <Sun />
@@ -340,39 +329,6 @@ export function SolarSystemVisualizer({ objects, selectedId, onSelect, simulatio
 
           <OrbitControls enablePan={true} minDistance={20} maxDistance={2500} autoRotate={!selectedId} autoRotateSpeed={0.05} />
         </Canvas>
-      </div>
-
-      <div className="absolute bottom-24 left-1/2 -translate-x-1/2 w-full max-w-lg px-6 z-40 hidden sm:block">
-        <div className="bg-aura-bg/60 border border-white/10 backdrop-blur-3xl p-6 rounded-[2.5rem] shadow-2xl">
-          <div className="flex justify-between items-center mb-6">
-            <div className="flex flex-col">
-              <div className="flex items-center gap-2 text-indigo-400 mb-1">
-                <Zap className="w-4 h-4" />
-                <span className="text-[10px] text-aura-text-secondary uppercase tracking-[0.2em] font-black">Simulation Control</span>
-              </div>
-              <p className="text-white font-mono text-lg font-bold">
-                {simulatedDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
-                <span className="text-indigo-400 ml-3 opacity-80">{simulatedDate.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
-              </p>
-            </div>
-            <div className="flex flex-col items-end">
-              <span className="text-[10px] text-aura-text-secondary uppercase tracking-widest font-bold mb-1">Time Scalar</span>
-              <span className="text-white text-xl font-black italic">{simulationSpeed}x</span>
-            </div>
-          </div>
-          
-          <div className="flex gap-2">
-            {[1, 10, 100, 500, 2500].map((speed) => (
-              <button
-                key={speed}
-                onClick={() => onSpeedChange(speed)}
-                className={`flex-1 py-3 rounded-2xl text-[10px] font-black transition-all border ${simulationSpeed === speed ? 'bg-indigo-500 border-indigo-400 text-white shadow-[0_0_20px_rgba(99,102,241,0.5)]' : 'bg-white/5 border-white/5 text-aura-text-secondary hover:bg-white/10'}`}
-              >
-                {speed === 2500 ? 'MAX' : `${speed}x`}
-              </button>
-            ))}
-          </div>
-        </div>
       </div>
     </div>
   );
