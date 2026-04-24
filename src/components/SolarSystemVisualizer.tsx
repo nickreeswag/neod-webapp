@@ -254,9 +254,12 @@ export function SolarSystemVisualizer({ objects, selectedId, onSelect, simulatio
             initial={{ x: 100, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: 100, opacity: 0 }}
-            className="absolute bottom-20 left-0 w-full px-4 sm:px-0 sm:bottom-auto sm:top-32 sm:right-6 sm:left-auto sm:w-96 z-50 pointer-events-none"
+            className="absolute bottom-20 left-0 w-full px-4 sm:px-0 sm:bottom-auto sm:top-32 sm:right-6 sm:left-auto sm:w-96 z-[100] pointer-events-none"
           >
-            <div className="bg-aura-bg/95 border border-white/10 backdrop-blur-3xl p-6 rounded-[2rem] shadow-2xl pointer-events-auto">
+            <div 
+              className="bg-aura-bg/95 border border-white/10 backdrop-blur-3xl p-6 rounded-[2rem] shadow-2xl pointer-events-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
               <div className="flex justify-between items-start mb-6">
                 <div className="flex gap-4 items-center">
                   <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center overflow-hidden border border-white/20">
@@ -294,6 +297,18 @@ export function SolarSystemVisualizer({ objects, selectedId, onSelect, simulatio
               </div>
             </div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {selectedObject && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => onSelect?.(null)}
+            className="absolute inset-0 z-[90] bg-black/10 backdrop-blur-[2px] pointer-events-auto"
+          />
         )}
       </AnimatePresence>
 

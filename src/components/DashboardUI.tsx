@@ -37,8 +37,8 @@ export function DashboardUI({ objectsToday }: DashboardUIProps) {
             <CommandHeader />
           </div>
           
-          <div className="w-full flex justify-center pointer-events-none mt-4">
-            <div className="w-full max-w-lg px-4 sm:px-6 pointer-events-auto">
+          <div className="w-full flex justify-center sm:justify-start pointer-events-none mt-4 sm:px-8">
+            <div className="w-full max-w-lg sm:max-w-md px-4 sm:px-0 pointer-events-auto">
               <HeroStatistic objects={objectsToday} />
             </div>
           </div>
