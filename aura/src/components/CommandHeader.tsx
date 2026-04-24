@@ -7,13 +7,13 @@ import { useEffect, useState } from "react";
 
 export function CommandHeader() {
   const [mounted, setMounted] = useState(false);
-  const date = format(new Date(), "dd MMM yyyy");
-
+  
   useEffect(() => {
-    setMounted(true);
+    const timer = setTimeout(() => setMounted(true), 0);
+    return () => clearTimeout(timer);
   }, []);
 
-  if (!mounted) return null;
+  const date = mounted ? format(new Date(), "dd MMM yyyy") : "";
 
   return (
     <motion.header
