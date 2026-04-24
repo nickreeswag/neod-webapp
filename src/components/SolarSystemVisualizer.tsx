@@ -215,6 +215,8 @@ function Asteroid({ object, index, isSelected, onSelect, simulationSpeed }: Aste
 }
 
 export function SolarSystemVisualizer({ objects, selectedId, onSelect, simulationSpeed, onSpeedChange }: SolarSystemVisualizerProps) {
+  const [simulatedDate, setSimulatedDate] = useState(new Date());
+  
   const renderObjects = useMemo(() => {
     return [...objects].sort((a, b) => {
       return parseFloat(a.close_approach_data[0].miss_distance.lunar) - parseFloat(b.close_approach_data[0].miss_distance.lunar);
@@ -222,6 +224,13 @@ export function SolarSystemVisualizer({ objects, selectedId, onSelect, simulatio
   }, [objects]);
 
   const selectedObject = renderObjects.find(o => o.id === selectedId);
+
+  // Simulation Time Logic: Syncing the date with the visual motion
+  // 1x speed in our viz = ~7 hours per real second.
+  useFrame((_, delta) => {
+    const timeStep = delta * 1000 * 25108 * simulationSpeed;
+    setSimulatedDate(prev => new Date(prev.getTime() + timeStep));
+  });
 
   return (
     <div className="fixed inset-0 z-0 w-full h-full bg-[#020617] overflow-hidden">
@@ -268,7 +277,7 @@ export function SolarSystemVisualizer({ objects, selectedId, onSelect, simulatio
         )}
       </AnimatePresence>
 
-      {/* Accuracy Legend & Units - Moved to Right Side to avoid overlap */}
+      {/* Accuracy Legend & Units */}
       <div className="absolute top-28 right-6 z-10 hidden md:block">
         <div className="bg-aura-bg/40 backdrop-blur-md border border-white/10 p-5 rounded-3xl shadow-xl max-w-[240px]">
           <p className="text-[10px] font-black text-white/50 uppercase tracking-[0.2em] mb-4 flex items-center gap-2 group relative">
@@ -333,23 +342,33 @@ export function SolarSystemVisualizer({ objects, selectedId, onSelect, simulatio
       </div>
 
       {/* Simulation Controls Group */}
-      <div className="absolute bottom-24 left-1/2 -translate-x-1/2 w-full max-w-sm px-6 z-40 hidden sm:block">
-        <div className="bg-aura-bg/60 border border-white/10 backdrop-blur-3xl p-5 rounded-3xl shadow-2xl">
-          <div className="flex justify-between items-center mb-4">
-            <div className="flex items-center gap-2 text-indigo-400">
-              <Zap className="w-4 h-4" />
-              <span className="text-[10px] text-aura-text-secondary uppercase tracking-[0.2em] font-black">Simulation Speed</span>
+      <div className="absolute bottom-24 left-1/2 -translate-x-1/2 w-full max-w-lg px-6 z-40 hidden sm:block">
+        <div className="bg-aura-bg/60 border border-white/10 backdrop-blur-3xl p-6 rounded-[2.5rem] shadow-2xl">
+          <div className="flex justify-between items-center mb-6">
+            <div className="flex flex-col">
+              <div className="flex items-center gap-2 text-indigo-400 mb-1">
+                <Zap className="w-4 h-4" />
+                <span className="text-[10px] text-aura-text-secondary uppercase tracking-[0.2em] font-black">Simulation Control</span>
+              </div>
+              <p className="text-white font-mono text-lg font-bold">
+                {simulatedDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                <span className="text-indigo-400 ml-3 opacity-80">{simulatedDate.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+              </p>
             </div>
-            <span className="text-white text-[10px] font-mono">{simulationSpeed}x Velocity</span>
+            <div className="flex flex-col items-end">
+              <span className="text-[10px] text-aura-text-secondary uppercase tracking-widest font-bold mb-1">Observation Rate</span>
+              <span className="text-white text-xl font-black italic">{simulationSpeed}x</span>
+            </div>
           </div>
+          
           <div className="flex gap-2">
-            {[1, 2, 5, 10, 25].map((speed) => (
+            {[1, 10, 100, 1000, 10000].map((speed) => (
               <button
                 key={speed}
                 onClick={() => onSpeedChange(speed)}
-                className={`flex-1 py-2 rounded-xl text-[10px] font-bold transition-all border ${simulationSpeed === speed ? 'bg-indigo-500 border-indigo-400 text-white shadow-[0_0_15px_rgba(99,102,241,0.4)]' : 'bg-white/5 border-white/5 text-aura-text-secondary hover:bg-white/10'}`}
+                className={`flex-1 py-3 rounded-2xl text-[10px] font-black transition-all border ${simulationSpeed === speed ? 'bg-indigo-500 border-indigo-400 text-white shadow-[0_0_20px_rgba(99,102,241,0.5)]' : 'bg-white/5 border-white/5 text-aura-text-secondary hover:bg-white/10'}`}
               >
-                {speed}x
+                {speed === 10000 ? 'WARP' : `${speed}x`}
               </button>
             ))}
           </div>
