@@ -4,7 +4,7 @@ import { OrbitControls, Sphere, Trail, Stars, Html } from "@react-three/drei";
 import { NearEarthObject } from "@/types/nasa";
 import { formatNumber } from "@/lib/utils";
 import * as THREE from "three";
-import { X, Clock, Activity, Info, Radio, Zap } from "lucide-react";
+import { X, Info, Zap } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface SolarSystemVisualizerProps {
@@ -214,6 +214,14 @@ function Asteroid({ object, index, isSelected, onSelect, simulationSpeed }: Aste
   );
 }
 
+function SimulationTimeManager({ simulationSpeed, setSimulatedDate }: { simulationSpeed: number, setSimulatedDate: React.Dispatch<React.SetStateAction<Date>> }) {
+  useFrame((_, delta) => {
+    const timeStep = delta * 1000 * 25108 * simulationSpeed;
+    setSimulatedDate(prev => new Date(prev.getTime() + timeStep));
+  });
+  return null;
+}
+
 export function SolarSystemVisualizer({ objects, selectedId, onSelect, simulationSpeed, onSpeedChange }: SolarSystemVisualizerProps) {
   const [simulatedDate, setSimulatedDate] = useState(new Date());
   
@@ -224,13 +232,6 @@ export function SolarSystemVisualizer({ objects, selectedId, onSelect, simulatio
   }, [objects]);
 
   const selectedObject = renderObjects.find(o => o.id === selectedId);
-
-  // Simulation Time Logic: Syncing the date with the visual motion
-  // 1x speed in our viz = ~7 hours per real second.
-  useFrame((_, delta) => {
-    const timeStep = delta * 1000 * 25108 * simulationSpeed;
-    setSimulatedDate(prev => new Date(prev.getTime() + timeStep));
-  });
 
   return (
     <div className="fixed inset-0 z-0 w-full h-full bg-[#020617] overflow-hidden">
@@ -306,6 +307,7 @@ export function SolarSystemVisualizer({ objects, selectedId, onSelect, simulatio
           <ambientLight intensity={0.2} />
           
           <Sun />
+          <SimulationTimeManager simulationSpeed={simulationSpeed} setSimulatedDate={setSimulatedDate} />
           
           {/* Inner Solar System */}
           <Planet name="Mercury" color="#A5A5A5" radius={18} size={0.5} speed={4.1} initialAngle={1} simulationSpeed={simulationSpeed} />

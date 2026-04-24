@@ -1,9 +1,5 @@
 import { NeoWsResponse } from "@/types/nasa";
 import { format } from "date-fns";
-import { CommandHeader } from "@/components/CommandHeader";
-import { HeroStatistic } from "@/components/HeroStatistic";
-import { SolarSystemVisualizer } from "@/components/SolarSystemVisualizer";
-import { ThreatMatrix } from "@/components/ThreatMatrix";
 
 async function getNeoData() {
   const today = format(new Date(), "yyyy-MM-dd");

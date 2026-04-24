@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { NearEarthObject } from "@/types/nasa";
 import { CommandHeader } from "@/components/CommandHeader";
 import { HeroStatistic } from "@/components/HeroStatistic";
