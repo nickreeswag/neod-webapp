@@ -24,6 +24,11 @@ export function ThreatMatrix({ objects, selectedId, onSelect }: ThreatMatrixProp
     return distA - distB;
   });
 
+  const handleSelect = (id: string) => {
+    onSelect?.(id);
+    setIsExpanded(false);
+  };
+
   return (
     <div className="fixed bottom-0 left-0 w-full z-40 px-0 sm:px-6 pb-0 sm:pb-6 pointer-events-none">
       <div className="mx-auto w-full max-w-7xl sm:flex sm:flex-col sm:items-center">
@@ -63,9 +68,9 @@ export function ThreatMatrix({ objects, selectedId, onSelect }: ThreatMatrixProp
                 animate={{ y: 0, opacity: 1 }}
                 exit={{ y: "100%", opacity: 0 }}
                 transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                className="pointer-events-auto w-full max-w-5xl bg-aura-bg/80 border border-white/10 backdrop-blur-3xl rounded-t-[2.5rem] shadow-[0_-20px_50px_rgba(0,0,0,0.5)] flex flex-col max-h-[80vh] overflow-hidden"
+                className="pointer-events-auto w-full sm:max-w-5xl bg-aura-bg/80 border-x sm:border border-white/10 backdrop-blur-3xl rounded-t-[2.5rem] sm:rounded-[2.5rem] shadow-[0_-20px_50px_rgba(0,0,0,0.5)] flex flex-col max-h-[85vh] sm:max-h-[80vh] overflow-hidden sm:mb-6"
               >
-                <div className="p-8 border-b border-white/5 flex justify-between items-center bg-gradient-to-r from-white/[0.02] to-transparent">
+                <div className="p-6 sm:p-8 border-b border-white/5 flex justify-between items-center bg-gradient-to-r from-white/[0.02] to-transparent">
                   <div className="flex items-center gap-4">
                     <div className="p-3 bg-indigo-500/10 rounded-2xl border border-indigo-500/20">
                       <Database className="w-6 h-6 text-indigo-400" />
@@ -84,53 +89,55 @@ export function ThreatMatrix({ objects, selectedId, onSelect }: ThreatMatrixProp
                 </div>
                 
                 <div className="flex-1 overflow-y-auto p-2">
-                  <table className="w-full text-left border-collapse">
-                    <thead className="sticky top-0 z-10 bg-aura-bg/95 backdrop-blur-md">
-                      <tr className="text-[10px] text-aura-text-secondary uppercase tracking-[0.15em]">
-                        <th className="px-8 py-5 font-bold">Designation</th>
-                        <th className="px-8 py-5 font-bold">Est. Diameter</th>
-                        <th className="px-8 py-5 font-bold">Miss Distance</th>
-                        <th className="px-8 py-5 font-bold">Threat Level</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-white/5">
-                      {sortedObjects.map((obj) => {
-                        const isHazard = obj.is_potentially_hazardous_asteroid;
-                        const diameter = obj.estimated_diameter.meters.estimated_diameter_max;
-                        const missDist = parseFloat(obj.close_approach_data[0].miss_distance.kilometers);
+                  <div className="min-w-[600px] sm:min-w-0">
+                    <table className="w-full text-left border-collapse">
+                      <thead className="sticky top-0 z-10 bg-aura-bg/95 backdrop-blur-md">
+                        <tr className="text-[10px] text-aura-text-secondary uppercase tracking-[0.15em]">
+                          <th className="px-6 sm:px-8 py-5 font-bold">Designation</th>
+                          <th className="px-6 sm:px-8 py-5 font-bold">Est. Diameter</th>
+                          <th className="px-6 sm:px-8 py-5 font-bold">Miss Distance</th>
+                          <th className="px-6 sm:px-8 py-5 font-bold">Threat Level</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-white/5">
+                        {sortedObjects.map((obj) => {
+                          const isHazard = obj.is_potentially_hazardous_asteroid;
+                          const diameter = obj.estimated_diameter.meters.estimated_diameter_max;
+                          const missDist = parseFloat(obj.close_approach_data[0].miss_distance.kilometers);
 
-                        return (
-                          <tr 
-                            key={obj.id} 
-                            onClick={() => onSelect?.(obj.id)}
-                            className={`hover:bg-white/[0.03] transition-all group cursor-pointer ${selectedId === obj.id ? 'bg-indigo-500/10 border-l-2 border-indigo-500' : 'border-l-2 border-transparent'}`}
-                          >
-                            <td className="px-8 py-6">
-                              <div className="flex flex-col">
-                                <span className="text-sm font-bold text-white group-hover:text-indigo-400 transition-colors">{obj.name}</span>
-                                <span className="text-[9px] text-aura-text-secondary mt-1 font-mono">ID: {obj.id}</span>
-                              </div>
-                            </td>
-                            <td className="px-8 py-6 text-sm text-aura-text-secondary font-mono">
-                              {formatNumber(Math.round(diameter))} m
-                            </td>
-                            <td className="px-8 py-6 text-sm text-aura-text-secondary font-mono">
-                              {formatNumber(Math.round(missDist))} km
-                            </td>
-                            <td className="px-8 py-6">
-                              <span className={`inline-flex items-center px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border ${
-                                isHazard 
-                                  ? 'bg-aura-red/10 text-aura-red border-aura-red/20 shadow-[0_0_15px_rgba(239,68,68,0.1)]' 
-                                  : 'bg-aura-green/10 text-aura-green border-aura-green/20'
-                              }`}>
-                                {isHazard ? 'CRITICAL' : 'NOMINAL'}
-                              </span>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                          return (
+                            <tr 
+                              key={obj.id} 
+                              onClick={() => handleSelect(obj.id)}
+                              className={`hover:bg-white/[0.03] transition-all group cursor-pointer ${selectedId === obj.id ? 'bg-indigo-500/10 border-l-2 border-indigo-500' : 'border-l-2 border-transparent'}`}
+                            >
+                              <td className="px-6 sm:px-8 py-6">
+                                <div className="flex flex-col">
+                                  <span className="text-sm font-bold text-white group-hover:text-indigo-400 transition-colors">{obj.name}</span>
+                                  <span className="text-[9px] text-aura-text-secondary mt-1 font-mono uppercase tracking-widest opacity-50">JPL-REF: {obj.id}</span>
+                                </div>
+                              </td>
+                              <td className="px-6 sm:px-8 py-6 text-sm text-aura-text-secondary font-mono">
+                                {formatNumber(Math.round(diameter))} m
+                              </td>
+                              <td className="px-6 sm:px-8 py-6 text-sm text-aura-text-secondary font-mono">
+                                {formatNumber(Math.round(missDist))} km
+                              </td>
+                              <td className="px-6 sm:px-8 py-6">
+                                <span className={`inline-flex items-center px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border ${
+                                  isHazard 
+                                    ? 'bg-aura-red/10 text-aura-red border-aura-red/20 shadow-[0_0_15px_rgba(239,68,68,0.1)]' 
+                                    : 'bg-aura-green/10 text-aura-green border-aura-green/20'
+                                }`}>
+                                  {isHazard ? 'CRITICAL' : 'NOMINAL'}
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </motion.div>
             </>
