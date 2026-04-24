@@ -1,11 +1,8 @@
-import { useRef, useMemo, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useMemo } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { OrbitControls, Sphere, Trail, Stars, Html } from "@react-three/drei";
-import { NearEarthObject } from "@/types/nasa";
-import { formatNumber } from "@/lib/utils";
+import { Stars, OrbitControls, Sphere, Trail, Html } from "@react-three/drei";
 import * as THREE from "three";
-import { X, Zap, Calendar } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { NearEarthObject } from "@/types/nasa";
 
 interface SolarSystemVisualizerProps {
   objects: NearEarthObject[];

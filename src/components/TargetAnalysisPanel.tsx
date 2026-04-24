@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useCallback } from "react";
 import { NearEarthObject } from "@/types/nasa";
 import { formatNumber } from "@/lib/utils";
 import { X, Zap, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
@@ -14,22 +14,24 @@ interface TargetAnalysisPanelProps {
 }
 
 export function TargetAnalysisPanel({ selectedObject, allObjects, onSelect, onClose }: TargetAnalysisPanelProps) {
-  if (!selectedObject) return null;
-
-  const currentIndex = allObjects.findIndex(o => o.id === selectedObject.id);
+  const currentIndex = allObjects.findIndex(o => o.id === selectedObject?.id);
   
-  const handlePrev = () => {
+  const handlePrev = useCallback(() => {
+    if (currentIndex === -1) return;
     const prevIndex = (currentIndex - 1 + allObjects.length) % allObjects.length;
     onSelect(allObjects[prevIndex].id);
-  };
+  }, [currentIndex, allObjects, onSelect]);
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
+    if (currentIndex === -1) return;
     const nextIndex = (currentIndex + 1) % allObjects.length;
     onSelect(allObjects[nextIndex].id);
-  };
+  }, [currentIndex, allObjects, onSelect]);
 
   // Keyboard navigation
   useEffect(() => {
+    if (!selectedObject) return;
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "ArrowLeft") handlePrev();
       if (e.key === "ArrowRight") handleNext();
@@ -38,7 +40,9 @@ export function TargetAnalysisPanel({ selectedObject, allObjects, onSelect, onCl
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [currentIndex, allObjects]);
+  }, [selectedObject, currentIndex, allObjects, handlePrev, handleNext, onClose]);
+
+  if (!selectedObject) return null;
 
   return (
     <AnimatePresence mode="wait">
