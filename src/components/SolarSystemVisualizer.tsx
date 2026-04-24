@@ -71,7 +71,7 @@ function Planet({ name, color, radius, size, speed, initialAngle = 0, simulation
           roughness={0.1}
         />
         {hovered && (
-          <Html distanceFactor={15}>
+          <Html>
             <div className="bg-aura-bg/90 border border-white/20 backdrop-blur-md px-3 py-1.5 rounded-lg pointer-events-none whitespace-nowrap">
               <span className="text-white text-[10px] font-bold uppercase tracking-widest">{name}</span>
             </div>
@@ -298,12 +298,19 @@ export function SolarSystemVisualizer({ objects, selectedId, onSelect, simulatio
           
           <Sun />
           
-          {/* Inner Solar System - Updated Colors */}
+          {/* Inner Solar System */}
           <Planet name="Mercury" color="#A5A5A5" radius={18} size={0.5} speed={4.1} initialAngle={1} simulationSpeed={simulationSpeed} />
           <Planet name="Venus" color="#E3BB76" radius={32} size={1.2} speed={1.6} initialAngle={2.5} simulationSpeed={simulationSpeed} />
           <Planet name="Earth" color="#2271B3" radius={AU_IN_UNITS} size={1.5} speed={1.0} initialAngle={0} simulationSpeed={simulationSpeed} />
           <Planet name="Mars" color="#E27B58" radius={65} size={0.9} speed={0.53} initialAngle={4.2} simulationSpeed={simulationSpeed} />
           
+          {/* Outer Solar System - Compressed Scale for Visibility */}
+          <Planet name="Jupiter" color="#D39C7E" radius={150} size={3.5} speed={0.08} initialAngle={0.5} simulationSpeed={simulationSpeed} />
+          <Planet name="Saturn" color="#C5AB6E" radius={240} size={3.0} speed={0.034} initialAngle={1.2} simulationSpeed={simulationSpeed} />
+          <Planet name="Uranus" color="#B5E3E3" radius={340} size={2.2} speed={0.012} initialAngle={2.8} simulationSpeed={simulationSpeed} />
+          <Planet name="Neptune" color="#4B70DD" radius={430} size={2.2} speed={0.006} initialAngle={3.5} simulationSpeed={simulationSpeed} />
+          <Planet name="Pluto" color="#D0B8A1" radius={510} size={0.4} speed={0.004} initialAngle={5.1} simulationSpeed={simulationSpeed} />
+
           {renderObjects.map((obj, i) => (
             <Asteroid 
               key={obj.id} 
@@ -318,7 +325,7 @@ export function SolarSystemVisualizer({ objects, selectedId, onSelect, simulatio
           <OrbitControls 
             enablePan={true} 
             minDistance={20} 
-            maxDistance={1500} 
+            maxDistance={2500} 
             autoRotate={!selectedId} 
             autoRotateSpeed={0.02 * simulationSpeed} 
           />
