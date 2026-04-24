@@ -6,7 +6,7 @@ import { OrbitControls, Sphere, Trail } from "@react-three/drei";
 import { NearEarthObject } from "@/types/nasa";
 import { formatNumber } from "@/lib/utils";
 import * as THREE from "three";
-import { X, Clock, Info } from "lucide-react";
+import { X, Clock } from "lucide-react";
 import { motion } from "framer-motion";
 
 interface SolarSystemVisualizerProps {
@@ -132,7 +132,6 @@ function Asteroid({ object, index, total, isSelected, onSelect, timeOffset }: As
 export function SolarSystemVisualizer({ objects }: SolarSystemVisualizerProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [timeOffset, setTimeOffset] = useState<number>(0);
-  const [showGuide, setShowGuide] = useState<boolean>(true);
 
   const renderObjects = useMemo(() => {
     return [...objects].sort((a, b) => {
@@ -145,30 +144,6 @@ export function SolarSystemVisualizer({ objects }: SolarSystemVisualizerProps) {
   return (
     <div className="fixed inset-0 z-0 w-full h-full bg-[#030712] overflow-hidden flex flex-col">
       
-      {/* Top Left Title - Repositioned to be below the main header */}
-      <div className="absolute top-[88px] left-6 z-10 pointer-events-none hidden md:block">
-        <h3 className="text-[10px] font-medium text-aura-text-secondary/50 uppercase tracking-[0.2em] flex items-center gap-2">
-          <span>Orbital Proximity Tracker</span>
-          <button 
-            onClick={() => setShowGuide(!showGuide)}
-            className="text-[9px] text-aura-text-secondary/50 hover:text-white bg-aura-border/10 px-2 py-0.5 rounded-full pointer-events-auto cursor-pointer transition-colors"
-          >
-            <Info className="w-2.5 h-2.5 inline mr-1" />How it works
-          </button>
-        </h3>
-        
-        {showGuide && (
-          <div className="mt-4 p-4 bg-aura-bg/80 border border-aura-border/50 backdrop-blur-xl rounded-lg max-w-[240px] shadow-2xl pointer-events-auto relative border-l-2 border-l-indigo-500/50">
-            <button onClick={() => setShowGuide(false)} className="absolute top-3 right-3 text-aura-text-secondary hover:text-white"><X className="w-3 h-3" /></button>
-            <h4 className="text-white text-[11px] font-semibold mb-3 flex items-center gap-2 uppercase tracking-wider">Navigation Guide</h4>
-            <ul className="text-[10px] text-aura-text-secondary space-y-2.5">
-              <li><strong className="text-indigo-400">Rotate:</strong> Drag Earth to explore.</li>
-              <li><strong className="text-indigo-400">Zoom:</strong> Scroll to inspect asteroids.</li>
-              <li><strong className="text-indigo-400">Inspect:</strong> Click any orb for NASA data.</li>
-            </ul>
-          </div>
-        )}
-      </div>
 
       {/* Selected Object Info Panel (Right Side - Floating) */}
       {selectedObject && (
