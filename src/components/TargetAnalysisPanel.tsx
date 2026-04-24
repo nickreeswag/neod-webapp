@@ -66,24 +66,24 @@ export function TargetAnalysisPanel({ selectedObject, allObjects, onSelect, onCl
           className="relative w-full max-w-lg px-4 sm:px-0 sm:w-96 pointer-events-none"
         >
           <div 
-            className="bg-aura-bg/95 border border-white/10 backdrop-blur-3xl p-6 rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.5)] pointer-events-auto overflow-hidden"
+            className="bg-aura-bg/95 border border-white/10 backdrop-blur-3xl p-6 rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.5)] pointer-events-auto"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header with Navigation */}
-            <div className="flex justify-between items-start mb-6">
-              <div className="flex gap-4 items-center">
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center overflow-hidden border border-white/20 shadow-lg shadow-indigo-500/20">
+            <div className="flex justify-between items-start mb-6 gap-2">
+              <div className="flex gap-4 items-center min-w-0 flex-1">
+                <div className="w-12 h-12 flex-shrink-0 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center overflow-hidden border border-white/20 shadow-lg shadow-indigo-500/20">
                    <Zap className="w-5 h-5 text-white" />
                 </div>
-                <div>
+                <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 mb-1">
-                    <p className="text-[10px] text-indigo-400 uppercase tracking-widest font-black">Target Analysis</p>
-                    <span className="text-[10px] text-white/30 font-mono">[{currentIndex + 1}/{allObjects.length}]</span>
+                    <p className="text-[10px] text-indigo-400 uppercase tracking-widest font-black truncate">Target Analysis</p>
+                    <span className="text-[10px] text-white/30 font-mono flex-shrink-0">[{currentIndex + 1}/{allObjects.length}]</span>
                   </div>
-                  <h4 className="text-white font-bold text-lg truncate w-40 sm:w-48 leading-tight">{selectedObject.name}</h4>
+                  <h4 className="text-white font-bold text-lg truncate leading-tight">{selectedObject.name}</h4>
                 </div>
               </div>
-              <div className="flex gap-1">
+              <div className="flex gap-1 flex-shrink-0 items-center">
                 <button 
                   onClick={handlePrev}
                   className="text-aura-text-secondary hover:text-white transition-all p-2 bg-white/5 hover:bg-white/10 rounded-full border border-white/5"
@@ -98,9 +98,10 @@ export function TargetAnalysisPanel({ selectedObject, allObjects, onSelect, onCl
                 >
                   <ChevronRight className="w-4 h-4" />
                 </button>
+                <div className="w-px h-4 bg-white/10 mx-1" />
                 <button 
                   onClick={onClose} 
-                  className="ml-2 text-aura-text-secondary hover:text-white transition-all p-2 bg-white/5 hover:bg-white/10 rounded-full border border-white/5"
+                  className="text-aura-text-secondary hover:text-white transition-all p-2 bg-white/5 hover:bg-white/10 rounded-full border border-white/5"
                 >
                   <X className="w-4 h-4" />
                 </button>
