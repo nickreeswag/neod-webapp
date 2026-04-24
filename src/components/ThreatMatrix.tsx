@@ -8,9 +8,11 @@ import { X, ChevronUp, Database, Activity } from "lucide-react";
 
 interface ThreatMatrixProps {
   objects: NearEarthObject[];
+  selectedId?: string | null;
+  onSelect?: (id: string) => void;
 }
 
-export function ThreatMatrix({ objects }: ThreatMatrixProps) {
+export function ThreatMatrix({ objects, selectedId, onSelect }: ThreatMatrixProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const sortedObjects = [...objects].sort((a, b) => {
@@ -98,7 +100,11 @@ export function ThreatMatrix({ objects }: ThreatMatrixProps) {
                         const missDist = parseFloat(obj.close_approach_data[0].miss_distance.kilometers);
 
                         return (
-                          <tr key={obj.id} className="hover:bg-white/[0.03] transition-all group">
+                          <tr 
+                            key={obj.id} 
+                            onClick={() => onSelect?.(obj.id)}
+                            className={`hover:bg-white/[0.03] transition-all group cursor-pointer ${selectedId === obj.id ? 'bg-indigo-500/10 border-l-2 border-indigo-500' : 'border-l-2 border-transparent'}`}
+                          >
                             <td className="px-8 py-6">
                               <div className="flex flex-col">
                                 <span className="text-sm font-bold text-white group-hover:text-indigo-400 transition-colors">{obj.name}</span>

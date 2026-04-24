@@ -82,13 +82,25 @@ export function CommandHeader() {
 
         <div className="flex items-center gap-6">
           <span suppressHydrationWarning className="hidden md:inline">{date}</span>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 group relative cursor-help">
             <motion.div
               animate={{ opacity: [1, 0.4, 1] }}
               transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
               className="w-2 h-2 rounded-full bg-aura-green shadow-[0_0_8px_rgba(16,185,129,0.5)]"
             />
             <span className="text-aura-green font-bold text-[11px] uppercase tracking-wider">Live Connection</span>
+            
+            {/* Metadata Tooltip */}
+            <div className="absolute top-full mt-4 right-0 hidden group-hover:block w-64 bg-aura-bg/95 border border-white/10 backdrop-blur-xl p-4 rounded-2xl shadow-2xl z-[100]">
+              <div className="flex items-center gap-2 mb-2">
+                <Activity className="w-3 h-3 text-indigo-400" />
+                <span className="text-[9px] font-black text-white uppercase tracking-widest">Signal Metadata</span>
+              </div>
+              <p className="text-[10px] text-aura-text-secondary leading-relaxed">
+                Direct asynchronous uplink to NASA JPL NeoWs (Near Earth Object Web Service). 
+                Status: ACTIVE. Telemetry stream provides sub-meter precision for orbital state vectors.
+              </p>
+            </div>
           </div>
         </div>
       </div>

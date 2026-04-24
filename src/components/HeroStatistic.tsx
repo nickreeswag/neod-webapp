@@ -16,7 +16,7 @@ export function HeroStatistic({ objects }: HeroStatisticProps) {
     <motion.div
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
-      className="bg-aura-bg/40 border border-white/5 backdrop-blur-3xl p-4 sm:p-5 rounded-2xl relative overflow-hidden group flex flex-col min-w-[200px] sm:min-w-[240px] shadow-2xl"
+      className="bg-aura-bg/40 border border-white/5 backdrop-blur-3xl p-3 sm:p-5 rounded-2xl relative overflow-hidden group flex flex-col min-w-[160px] sm:min-w-[240px] shadow-2xl"
     >
       {/* Dynamic background glow */}
       <div className={`absolute -right-12 -top-12 w-32 h-32 rounded-full blur-[60px] opacity-20 transition-colors duration-1000 ${isDanger ? 'bg-aura-red' : 'bg-aura-green'}`} />

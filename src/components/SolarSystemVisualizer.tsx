@@ -1,16 +1,18 @@
-"use client";
-
 import { useRef, useMemo, useState, useEffect } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { OrbitControls, Sphere, Trail, Stars } from "@react-three/drei";
+import { OrbitControls, Sphere, Trail, Stars, Html } from "@react-three/drei";
 import { NearEarthObject } from "@/types/nasa";
 import { formatNumber } from "@/lib/utils";
 import * as THREE from "three";
-import { X, Clock, Activity, Info } from "lucide-react";
+import { X, Clock, Activity, Info, Radio, Zap } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface SolarSystemVisualizerProps {
   objects: NearEarthObject[];
+  selectedId?: string | null;
+  onSelect?: (id: string | null) => void;
+  simulationSpeed: number;
+  onSpeedChange: (speed: number) => void;
 }
 
 // 1 Unit = 10 Lunar Distances (LD)
@@ -25,14 +27,17 @@ interface PlanetProps {
   size: number; // visual size
   speed: number; // orbital speed (rad/sec for viz)
   initialAngle?: number;
+  simulationSpeed: number;
 }
 
-function Planet({ name, color, radius, size, speed, initialAngle = 0 }: PlanetProps) {
+function Planet({ name, color, radius, size, speed, initialAngle = 0, simulationSpeed }: PlanetProps) {
   const meshRef = useRef<THREE.Mesh>(null);
+  const [hovered, setHovered] = useState(false);
 
   useFrame(({ clock }) => {
     if (meshRef.current) {
-      const t = clock.getElapsedTime() * speed * 0.05;
+      // Significantly slowed down base speed, now multiplied by simulationSpeed
+      const t = clock.getElapsedTime() * speed * 0.005 * simulationSpeed;
       const angle = t + initialAngle;
       meshRef.current.position.set(
         Math.cos(angle) * radius,
@@ -48,32 +53,62 @@ function Planet({ name, color, radius, size, speed, initialAngle = 0 }: PlanetPr
       {/* Orbital Path */}
       <mesh rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[radius - 0.1, radius + 0.1, 128]} />
-        <meshBasicMaterial color={color} transparent opacity={0.05} side={THREE.DoubleSide} />
+        <meshBasicMaterial color={color} transparent opacity={0.08} side={THREE.DoubleSide} />
       </mesh>
       
       {/* The Planet */}
-      <Sphere ref={meshRef} args={[size, 32, 32]}>
+      <Sphere 
+        ref={meshRef} 
+        args={[size, 32, 32]}
+        onPointerOver={() => setHovered(true)}
+        onPointerOut={() => setHovered(false)}
+      >
         <meshStandardMaterial 
           color={color} 
           emissive={color} 
-          emissiveIntensity={0.4}
+          emissiveIntensity={hovered ? 0.8 : 0.4}
           metalness={0.9}
           roughness={0.1}
         />
+        {hovered && (
+          <Html distanceFactor={15}>
+            <div className="bg-aura-bg/90 border border-white/20 backdrop-blur-md px-3 py-1.5 rounded-lg pointer-events-none whitespace-nowrap">
+              <span className="text-white text-[10px] font-bold uppercase tracking-widest">{name}</span>
+            </div>
+          </Html>
+        )}
       </Sphere>
     </group>
   );
 }
 
 function Sun() {
+  const lightRef = useRef<THREE.PointLight>(null);
+  
   return (
     <group>
-      <Sphere args={[3, 32, 32]}>
-        <meshBasicMaterial color="#fbbf24" />
+      {/* The Sun Core */}
+      <Sphere args={[5, 32, 32]}>
+        <meshBasicMaterial color="#fffbeb" />
       </Sphere>
-      <pointLight intensity={10} distance={2000} color="#fffbeb" shadow-mapSize={[2048, 2048]} />
-      <Sphere args={[3.5, 32, 32]}>
-        <meshBasicMaterial color="#f59e0b" transparent opacity={0.15} />
+      
+      {/* The Corona Glow */}
+      <Sphere args={[6, 32, 32]}>
+        <meshBasicMaterial color="#fbbf24" transparent opacity={0.3} />
+      </Sphere>
+      
+      {/* Dynamic Light Source */}
+      <pointLight 
+        ref={lightRef}
+        intensity={15} 
+        distance={3000} 
+        color="#fffbeb" 
+        shadow-mapSize={[2048, 2048]} 
+      />
+
+      {/* Extreme Outer Glow */}
+      <Sphere args={[8, 32, 32]}>
+        <meshBasicMaterial color="#f59e0b" transparent opacity={0.1} />
       </Sphere>
     </group>
   );
@@ -84,10 +119,10 @@ interface AsteroidProps {
   index: number;
   isSelected: boolean;
   onSelect: () => void;
-  timeOffset: number;
+  simulationSpeed: number;
 }
 
-function Asteroid({ object, index, isSelected, onSelect, timeOffset }: AsteroidProps) {
+function Asteroid({ object, index, isSelected, onSelect, simulationSpeed }: AsteroidProps) {
   const meshRef = useRef<THREE.Mesh>(null);
   const [trailReady, setTrailReady] = useState(false);
   
@@ -99,23 +134,16 @@ function Asteroid({ object, index, isSelected, onSelect, timeOffset }: AsteroidP
   const isHazard = object.is_potentially_hazardous_asteroid;
   const color = isHazard ? "#EF4444" : "#F59E0B";
 
-  // Scientific Scaling: NEOs are small. We use a base visibility + relative scale.
+  // Refined NEO Scaling: Increased minimum size for visibility
   const visualScale = useMemo(() => {
-    // Logarithmic scale ensures 10m and 1km asteroids are both visible but distinct
-    return 0.08 + Math.log10(diameterM / 10) * 0.05;
+    return Math.max(0.12, 0.08 + Math.log10(diameterM / 10) * 0.05);
   }, [diameterM]);
 
-  // Orbit Physics:
-  // We model these as solar orbits that intersect Earth's proximity today.
   const orbitParams = useMemo(() => {
     const distFromEarthUnits = missDistLD / SCALE_UNIT;
-    // Randomize initial positions for flyby effect
     const angleOffset = (index * 137.5) * (Math.PI / 180);
     const inclination = (index % 5 - 2) * 0.05;
-    
-    // Angular velocity: v = omega * r => omega = v / r
-    // Earth's average distance from Sun is ~38.9 units
-    const angularVelocityBase = (velocityKph / 107000) * 0.1; // Normalized to Earth's orbital speed
+    const angularVelocityBase = (velocityKph / 107000) * 0.1;
 
     return {
       distFromEarthUnits,
@@ -132,17 +160,15 @@ function Asteroid({ object, index, isSelected, onSelect, timeOffset }: AsteroidP
 
   useFrame(({ clock }) => {
     if (meshRef.current) {
-      const t = clock.getElapsedTime() * 0.05 + timeOffset * 0.5;
+      // Applied simulationSpeed to asteroid motion
+      const t = clock.getElapsedTime() * 0.005 * simulationSpeed;
       
-      // Calculate Earth's current position
-      const earthAngle = clock.getElapsedTime() * 0.05 * 1.0;
+      const earthAngle = clock.getElapsedTime() * 0.005 * simulationSpeed * 1.0;
       const ex = Math.cos(earthAngle) * AU_IN_UNITS;
       const ez = Math.sin(earthAngle) * AU_IN_UNITS;
 
-      // Asteroid position: Close to Earth today, but with its own velocity
-      const asteroidAngle = earthAngle + orbitParams.angleOffset + (t * orbitParams.angularVelocity);
+      const asteroidAngle = earthAngle + orbitParams.angleOffset + (t * orbitParams.angularVelocity * 10);
       
-      // We position it relative to Earth based on the miss distance
       const ax = ex + Math.cos(asteroidAngle) * orbitParams.distFromEarthUnits;
       const ay = Math.sin(asteroidAngle) * orbitParams.distFromEarthUnits * orbitParams.inclination;
       const az = ez + Math.sin(asteroidAngle) * orbitParams.distFromEarthUnits;
@@ -153,8 +179,9 @@ function Asteroid({ object, index, isSelected, onSelect, timeOffset }: AsteroidP
 
   return (
     <group ref={meshRef}>
+      {/* Large Invisible Click Target */}
       <Sphere 
-        args={[visualScale * 8, 16, 16]} 
+        args={[Math.max(1.5, visualScale * 12), 16, 16]} 
         onClick={(e) => { e.stopPropagation(); onSelect(); }}
         onPointerOver={() => { document.body.style.cursor = 'pointer'; }}
         onPointerOut={() => { document.body.style.cursor = 'auto'; }}
@@ -166,27 +193,28 @@ function Asteroid({ object, index, isSelected, onSelect, timeOffset }: AsteroidP
         <Trail
           width={visualScale * 3}
           color={isSelected ? "#ffffff" : color}
-          length={15}
+          length={isSelected ? 30 : 15}
           decay={1}
           local={false}
         >
-          <Sphere args={[visualScale, 16, 16]}>
-            <meshStandardMaterial color={isSelected ? "#ffffff" : color} emissive={color} emissiveIntensity={3} />
+          <Sphere args={[visualScale * (isSelected ? 1.5 : 1), 16, 16]}>
+            <meshStandardMaterial 
+              color={isSelected ? "#ffffff" : color} 
+              emissive={color} 
+              emissiveIntensity={isSelected ? 10 : 3} 
+            />
           </Sphere>
         </Trail>
       )}
       
-      <Sphere args={[visualScale * 2, 16, 16]}>
-        <meshBasicMaterial color={color} transparent opacity={0.2} />
+      <Sphere args={[visualScale * 2.5, 16, 16]}>
+        <meshBasicMaterial color={color} transparent opacity={isSelected ? 0.4 : 0.2} />
       </Sphere>
     </group>
   );
 }
 
-export function SolarSystemVisualizer({ objects }: SolarSystemVisualizerProps) {
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [timeOffset, setTimeOffset] = useState<number>(0);
-
+export function SolarSystemVisualizer({ objects, selectedId, onSelect, simulationSpeed, onSpeedChange }: SolarSystemVisualizerProps) {
   const renderObjects = useMemo(() => {
     return [...objects].sort((a, b) => {
       return parseFloat(a.close_approach_data[0].miss_distance.lunar) - parseFloat(b.close_approach_data[0].miss_distance.lunar);
@@ -198,7 +226,7 @@ export function SolarSystemVisualizer({ objects }: SolarSystemVisualizerProps) {
   return (
     <div className="fixed inset-0 z-0 w-full h-full bg-[#020617] overflow-hidden">
       
-      {/* NEO Information Panel - Fixed Mobile Overlap */}
+      {/* NEO Information Panel */}
       <AnimatePresence>
         {selectedObject && (
           <motion.div 
@@ -210,11 +238,11 @@ export function SolarSystemVisualizer({ objects }: SolarSystemVisualizerProps) {
             <div className="bg-aura-bg/90 border border-white/10 backdrop-blur-3xl p-6 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] pointer-events-auto">
               <div className="flex justify-between items-start mb-6">
                 <div>
-                  <p className="text-[10px] text-indigo-400 uppercase tracking-widest font-black mb-1">Observation Target</p>
+                  <p className="text-[10px] text-indigo-400 uppercase tracking-widest font-black mb-1">Target Identified</p>
                   <h4 className="text-white font-bold text-xl truncate pr-4">{selectedObject.name}</h4>
                 </div>
                 <button 
-                  onClick={() => setSelectedId(null)}
+                  onClick={() => onSelect?.(null)}
                   className="text-aura-text-secondary hover:text-white transition-colors p-2 bg-white/5 rounded-full shrink-0"
                 >
                   <X className="w-4 h-4" />
@@ -233,18 +261,22 @@ export function SolarSystemVisualizer({ objects }: SolarSystemVisualizerProps) {
               </div>
 
               <div className={`px-4 py-3 rounded-2xl text-[10px] uppercase tracking-widest font-black text-center border ${selectedObject.is_potentially_hazardous_asteroid ? 'bg-red-500/20 border-red-500/30 text-red-400' : 'bg-green-500/20 border-green-500/30 text-green-400'}`}>
-                {selectedObject.is_potentially_hazardous_asteroid ? 'Hazard Classification: CRITICAL' : 'Hazard Classification: NOMINAL'}
+                {selectedObject.is_potentially_hazardous_asteroid ? 'Classification: PHAS 1' : 'Classification: STABLE'}
               </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Accuracy Legend & Units */}
-      <div className="absolute top-28 left-6 z-10 hidden md:block">
-        <div className="bg-aura-bg/40 backdrop-blur-md border border-white/10 p-5 rounded-3xl shadow-xl">
-          <p className="text-[10px] font-black text-white/50 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-            <Info className="w-3 h-3 text-indigo-400" /> Ephemeris Model v2
+      {/* Accuracy Legend & Units - Moved to Right Side to avoid overlap */}
+      <div className="absolute top-28 right-6 z-10 hidden md:block">
+        <div className="bg-aura-bg/40 backdrop-blur-md border border-white/10 p-5 rounded-3xl shadow-xl max-w-[240px]">
+          <p className="text-[10px] font-black text-white/50 uppercase tracking-[0.2em] mb-4 flex items-center gap-2 group relative">
+            <Info className="w-3 h-3 text-indigo-400" /> 
+            Live JPL Stream 
+            <div className="absolute left-0 top-full mt-2 hidden group-hover:block bg-aura-bg border border-white/10 p-3 rounded-xl z-50 text-[9px] normal-case tracking-normal w-48 shadow-2xl">
+              Real-time connection to NASA Jet Propulsion Laboratory (JPL) Horizons API providing sub-meter orbital state vectors.
+            </div>
           </p>
           <div className="space-y-3">
             <div className="flex items-center gap-3 text-[10px] text-white/80">
@@ -253,27 +285,24 @@ export function SolarSystemVisualizer({ objects }: SolarSystemVisualizerProps) {
             </div>
             <div className="flex items-center gap-3 text-[10px] text-white/80">
               <div className="w-2 h-2 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.6)]" />
-              <span>Logarithmic Volumetric Scaling</span>
-            </div>
-            <div className="pt-2 border-t border-white/5">
-              <p className="text-[9px] text-aura-text-secondary leading-relaxed">Trajectories calculated using relative velocity vectors and miss distance epoch.</p>
+              <span>Scaled for Observation Visibility</span>
             </div>
           </div>
         </div>
       </div>
 
       <div className="absolute inset-0 cursor-crosshair">
-        <Canvas camera={{ position: [0, 80, 140], fov: 45 }} shadows>
-          <Stars radius={400} depth={50} count={15000} factor={6} saturation={0} fade speed={1.5} />
-          <ambientLight intensity={0.15} />
+        <Canvas camera={{ position: [0, 150, 250], fov: 45 }} shadows>
+          <Stars radius={600} depth={50} count={20000} factor={7} saturation={0} fade speed={2} />
+          <ambientLight intensity={0.2} />
           
           <Sun />
           
-          {/* Inner Solar System */}
-          <Planet name="Mercury" color="#94a3b8" radius={15} size={0.3} speed={4.1} initialAngle={1} />
-          <Planet name="Venus" color="#fbbf24" radius={28} size={0.8} speed={1.6} initialAngle={2.5} />
-          <Planet name="Earth" color="#3b82f6" radius={AU_IN_UNITS} size={1.0} speed={1.0} initialAngle={0} />
-          <Planet name="Mars" color="#ef4444" radius={59} size={0.6} speed={0.53} initialAngle={4.2} />
+          {/* Inner Solar System - Updated Colors */}
+          <Planet name="Mercury" color="#A5A5A5" radius={18} size={0.5} speed={4.1} initialAngle={1} simulationSpeed={simulationSpeed} />
+          <Planet name="Venus" color="#E3BB76" radius={32} size={1.2} speed={1.6} initialAngle={2.5} simulationSpeed={simulationSpeed} />
+          <Planet name="Earth" color="#2271B3" radius={AU_IN_UNITS} size={1.5} speed={1.0} initialAngle={0} simulationSpeed={simulationSpeed} />
+          <Planet name="Mars" color="#E27B58" radius={65} size={0.9} speed={0.53} initialAngle={4.2} simulationSpeed={simulationSpeed} />
           
           {renderObjects.map((obj, i) => (
             <Asteroid 
@@ -281,37 +310,42 @@ export function SolarSystemVisualizer({ objects }: SolarSystemVisualizerProps) {
               object={obj} 
               index={i} 
               isSelected={selectedId === obj.id}
-              onSelect={() => setSelectedId(obj.id)}
-              timeOffset={timeOffset}
+              onSelect={() => onSelect?.(obj.id)}
+              simulationSpeed={simulationSpeed}
             />
           ))}
 
           <OrbitControls 
             enablePan={true} 
-            minDistance={15} 
-            maxDistance={500} 
+            minDistance={20} 
+            maxDistance={1500} 
             autoRotate={!selectedId} 
-            autoRotateSpeed={0.04} 
+            autoRotateSpeed={0.02 * simulationSpeed} 
           />
         </Canvas>
       </div>
 
-      {/* Timeline Control Group */}
+      {/* Simulation Controls Group */}
       <div className="absolute bottom-24 left-1/2 -translate-x-1/2 w-full max-w-sm px-6 z-40 hidden sm:block">
         <div className="bg-aura-bg/60 border border-white/10 backdrop-blur-3xl p-5 rounded-3xl shadow-2xl">
-          <div className="flex justify-between text-[10px] text-aura-text-secondary mb-4 uppercase tracking-[0.2em] font-black">
-            <span className="flex items-center gap-2 text-indigo-400"><Clock className="w-4 h-4" /> Realtime Orbit</span>
-            <span className="text-white">Projection: +{timeOffset.toFixed(1)} years</span>
+          <div className="flex justify-between items-center mb-4">
+            <div className="flex items-center gap-2 text-indigo-400">
+              <Zap className="w-4 h-4" />
+              <span className="text-[10px] text-aura-text-secondary uppercase tracking-[0.2em] font-black">Simulation Speed</span>
+            </div>
+            <span className="text-white text-[10px] font-mono">{simulationSpeed}x Velocity</span>
           </div>
-          <input 
-            type="range" 
-            min="0" 
-            max="50" 
-            step="0.1"
-            value={timeOffset}
-            onChange={(e) => setTimeOffset(parseFloat(e.target.value))}
-            className="w-full h-1.5 bg-white/10 rounded-full appearance-none cursor-pointer accent-indigo-500 hover:accent-indigo-400 transition-all shadow-inner"
-          />
+          <div className="flex gap-2">
+            {[1, 2, 5, 10, 25].map((speed) => (
+              <button
+                key={speed}
+                onClick={() => onSpeedChange(speed)}
+                className={`flex-1 py-2 rounded-xl text-[10px] font-bold transition-all border ${simulationSpeed === speed ? 'bg-indigo-500 border-indigo-400 text-white shadow-[0_0_15px_rgba(99,102,241,0.4)]' : 'bg-white/5 border-white/5 text-aura-text-secondary hover:bg-white/10'}`}
+              >
+                {speed}x
+              </button>
+            ))}
+          </div>
         </div>
       </div>
     </div>

@@ -36,36 +36,12 @@ function getFallbackData(date: string): NeoWsResponse {
   };
 }
 
+import { DashboardUI } from "@/components/DashboardUI";
+
 export default async function Dashboard() {
   const data = await getNeoData();
   const todayDate = format(new Date(), "yyyy-MM-dd");
   const objectsToday = data.near_earth_objects[todayDate] || [];
 
-  return (
-    <main className="relative h-screen w-screen overflow-hidden bg-[#030712] selection:bg-indigo-500/30">
-      {/* Background Layer: The 3D Visualizer */}
-      <SolarSystemVisualizer objects={objectsToday} />
-
-      {/* UI Overlay Layer */}
-      <div className="relative z-10 h-full w-full pointer-events-none flex flex-col">
-        {/* Top Section: Header and Mini Hero Stat */}
-        <div className="flex flex-col w-full">
-          <div className="pointer-events-auto">
-            <CommandHeader />
-          </div>
-          
-          <div className="px-6 flex justify-between items-start pointer-events-none mt-4">
-            <div className="pointer-events-auto">
-              <HeroStatistic objects={objectsToday} />
-            </div>
-            
-            {/* Additional HUD elements could go here (Right side) */}
-          </div>
-        </div>
-
-        {/* The Threat Matrix Dock is self-contained and fixed, so it doesn't need to be in the flex flow */}
-        <ThreatMatrix objects={objectsToday} />
-      </div>
-    </main>
-  );
+  return <DashboardUI objectsToday={objectsToday} />;
 }
