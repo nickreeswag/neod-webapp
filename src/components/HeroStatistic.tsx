@@ -14,33 +14,39 @@ export function HeroStatistic({ objects }: HeroStatisticProps) {
 
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      className="glass-panel p-8 relative overflow-hidden group flex flex-col justify-between"
+      initial={{ opacity: 0, x: -20 }}
+      animate={{ opacity: 1, x: 0 }}
+      className="bg-aura-bg/40 border border-white/5 backdrop-blur-3xl p-5 rounded-2xl relative overflow-hidden group flex flex-col min-w-[240px] shadow-2xl"
     >
-      {/* Background glow */}
-      <div className={`absolute -right-20 -top-20 w-64 h-64 rounded-full blur-[100px] opacity-20 transition-colors duration-1000 ${isDanger ? 'bg-aura-red' : 'bg-aura-green'}`} />
+      {/* Dynamic background glow */}
+      <div className={`absolute -right-12 -top-12 w-32 h-32 rounded-full blur-[60px] opacity-20 transition-colors duration-1000 ${isDanger ? 'bg-aura-red' : 'bg-aura-green'}`} />
 
       <div className="relative z-10">
-        <div className="flex items-center gap-3 mb-6">
-          <div className={`p-2 rounded-lg ${isDanger ? 'bg-aura-red/10 text-aura-red' : 'bg-aura-green/10 text-aura-green'}`}>
-            {isDanger ? <AlertTriangle className="w-5 h-5" /> : <ShieldCheck className="w-5 h-5" />}
+        <div className="flex items-center gap-3 mb-4">
+          <div className={`p-1.5 rounded-lg ${isDanger ? 'bg-aura-red/20 text-aura-red shadow-[0_0_15px_rgba(239,68,68,0.3)]' : 'bg-aura-green/20 text-aura-green'}`}>
+            {isDanger ? <AlertTriangle className="w-4 h-4" /> : <ShieldCheck className="w-4 h-4" />}
           </div>
-          <h2 className="text-sm font-medium text-aura-text-secondary uppercase tracking-widest">Hazardous Objects Today</h2>
+          <h2 className="text-[10px] font-bold text-aura-text-secondary uppercase tracking-[0.2em]">Hazard Alert</h2>
         </div>
 
-        <div className="flex items-baseline gap-4">
-          <span className="text-7xl font-bold tracking-tighter text-white">{hazardousCount}</span>
-          <span className="text-aura-text-secondary text-lg">detected</span>
+        <div className="flex items-baseline gap-3">
+          <span className="text-5xl font-black tracking-tighter text-white drop-shadow-2xl">{hazardousCount}</span>
+          <div className="flex flex-col">
+            <span className="text-aura-text-secondary text-[10px] uppercase tracking-wider font-semibold">Targets</span>
+            <span className="text-[9px] text-aura-text-secondary/60">Near Earth Today</span>
+          </div>
         </div>
       </div>
 
-      <div className="relative z-10 mt-8 pt-6 border-t border-aura-border/50">
-        <p className="text-sm text-aura-text-secondary">
-          {isDanger 
-            ? "Elevated threat level. Monitoring closely." 
-            : "No imminent threats detected within current parameters."}
-        </p>
+      <div className="relative z-10 mt-5 pt-4 border-t border-white/5">
+        <div className="flex items-center gap-2">
+          <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${isDanger ? 'bg-aura-red' : 'bg-aura-green'}`} />
+          <p className="text-[10px] text-aura-text-secondary font-medium">
+            {isDanger 
+              ? "System: Elevated Caution" 
+              : "System: Nominal Status"}
+          </p>
+        </div>
       </div>
     </motion.div>
   );
