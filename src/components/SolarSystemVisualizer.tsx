@@ -4,7 +4,7 @@ import { OrbitControls, Sphere, Trail, Stars, Html } from "@react-three/drei";
 import { NearEarthObject } from "@/types/nasa";
 import { formatNumber } from "@/lib/utils";
 import * as THREE from "three";
-import { X, Info, Zap, Calendar } from "lucide-react";
+import { X, Zap, Calendar } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface SolarSystemVisualizerProps {
@@ -184,23 +184,51 @@ function Asteroid({ object, index, isSelected, onSelect, simulatedTime }: Astero
   );
 }
 
-function CameraFocusManager({ targetPos, isSelected }: { targetPos: THREE.Vector3 | null, isSelected: boolean }) {
-  const { camera } = useFrame((state) => {
-    if (isSelected && targetPos) {
-      // Smoothly move camera target to the selected object
-      state.controls?.target.lerp(targetPos, 0.1);
+function CameraFocusManager({ targetRef, isSelected }: { targetRef: React.MutableRefObject<THREE.Vector3>, isSelected: boolean }) {
+  useFrame((state) => {
+    const controls = state.controls as unknown as { target: THREE.Vector3 };
+    
+    if (isSelected && targetRef.current) {
+      if (controls && controls.target) {
+        controls.target.lerp(targetRef.current, 0.1);
+      }
       
-      // Also zoom in slightly if we are looking at an asteroid
       const idealDist = 40;
-      const currentDist = state.camera.position.distanceTo(targetPos);
+      const currentDist = state.camera.position.distanceTo(targetRef.current);
       if (currentDist > idealDist) {
-        const direction = new THREE.Vector3().subVectors(state.camera.position, targetPos).normalize();
-        const targetCamPos = targetPos.clone().add(direction.multiplyScalar(idealDist));
+        const direction = new THREE.Vector3().subVectors(state.camera.position, targetRef.current).normalize();
+        const targetCamPos = targetRef.current.clone().add(direction.multiplyScalar(idealDist));
         state.camera.position.lerp(targetCamPos, 0.05);
       }
     } else {
-      // Default center target
-      state.controls?.target.lerp(new THREE.Vector3(0, 0, 0), 0.05);
+      if (controls && controls.target) {
+        controls.target.lerp(new THREE.Vector3(0, 0, 0), 0.05);
+      }
+    }
+  });
+  return null;
+}
+
+function SelectedObjectTracker({ selectedObject, simulatedTime, renderObjects, targetRef }: { selectedObject: NearEarthObject | undefined, simulatedTime: number, renderObjects: NearEarthObject[], targetRef: React.MutableRefObject<THREE.Vector3> }) {
+  useFrame(() => {
+    if (selectedObject) {
+      const earthAngle = (simulatedTime / EARTH_YEAR_MS) * Math.PI * 2;
+      const ex = Math.cos(earthAngle) * AU_IN_UNITS;
+      const ez = Math.sin(earthAngle) * AU_IN_UNITS;
+
+      const asteroidIndex = renderObjects.findIndex(o => o.id === selectedObject.id);
+      const orbitParams = {
+        distFromEarthUnits: parseFloat(selectedObject.close_approach_data[0].miss_distance.lunar) / SCALE_UNIT,
+        angleOffset: (asteroidIndex * 137.5) * (Math.PI / 180),
+        periodFactor: 1.0 + (asteroidIndex % 10) * 0.1
+      };
+
+      const asteroidAngle = (simulatedTime / (EARTH_YEAR_MS * orbitParams.periodFactor)) * Math.PI * 2 + orbitParams.angleOffset;
+      targetRef.current.set(
+        ex + Math.cos(asteroidAngle) * orbitParams.distFromEarthUnits,
+        0,
+        ez + Math.sin(asteroidAngle) * orbitParams.distFromEarthUnits
+      );
     }
   });
   return null;
@@ -208,9 +236,6 @@ function CameraFocusManager({ targetPos, isSelected }: { targetPos: THREE.Vector
 
 function SimulationTimeManager({ simulationSpeed, setSimulatedDate }: { simulationSpeed: number, setSimulatedDate: React.Dispatch<React.SetStateAction<Date>> }) {
   useFrame((_, delta) => {
-    // 1x simulation = Real time passage (1ms per 1ms)
-    // To make it meaningful, we use a base multiplier.
-    // 1x speed = 1 day passes every 10 seconds (8640x speed)
     const baseFactor = 8640; 
     const timeStep = delta * 1000 * baseFactor * simulationSpeed;
     setSimulatedDate(prev => new Date(prev.getTime() + timeStep));
@@ -220,7 +245,7 @@ function SimulationTimeManager({ simulationSpeed, setSimulatedDate }: { simulati
 
 export function SolarSystemVisualizer({ objects, selectedId, onSelect, simulationSpeed, onSpeedChange }: SolarSystemVisualizerProps) {
   const [simulatedDate, setSimulatedDate] = useState(new Date());
-  const selectedMeshRef = useRef<THREE.Vector3>(new THREE.Vector3());
+  const selectedMeshPos = useRef<THREE.Vector3>(new THREE.Vector3());
   
   const renderObjects = useMemo(() => {
     return [...objects].sort((a, b) => {
@@ -229,29 +254,6 @@ export function SolarSystemVisualizer({ objects, selectedId, onSelect, simulatio
   }, [objects]);
 
   const selectedObject = renderObjects.find(o => o.id === selectedId);
-
-  // Track position of selected object for camera focus
-  useFrame(() => {
-    if (selectedObject) {
-      const earthAngle = (simulatedDate.getTime() / EARTH_YEAR_MS) * Math.PI * 2;
-      const ex = Math.cos(earthAngle) * AU_IN_UNITS;
-      const ez = Math.sin(earthAngle) * AU_IN_UNITS;
-
-      const asteroidIndex = renderObjects.findIndex(o => o.id === selectedId);
-      const orbitParams = {
-        distFromEarthUnits: parseFloat(selectedObject.close_approach_data[0].miss_distance.lunar) / SCALE_UNIT,
-        angleOffset: (asteroidIndex * 137.5) * (Math.PI / 180),
-        periodFactor: 1.0 + (asteroidIndex % 10) * 0.1
-      };
-
-      const asteroidAngle = (simulatedDate.getTime() / (EARTH_YEAR_MS * orbitParams.periodFactor)) * Math.PI * 2 + orbitParams.angleOffset;
-      selectedMeshRef.current.set(
-        ex + Math.cos(asteroidAngle) * orbitParams.distFromEarthUnits,
-        0,
-        ez + Math.sin(asteroidAngle) * orbitParams.distFromEarthUnits
-      );
-    }
-  });
 
   return (
     <div className="fixed inset-0 z-0 w-full h-full bg-[#020617] overflow-hidden">
@@ -269,8 +271,7 @@ export function SolarSystemVisualizer({ objects, selectedId, onSelect, simulatio
               <div className="flex justify-between items-start mb-6">
                 <div className="flex gap-4 items-center">
                   <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center overflow-hidden border border-white/20">
-                     <img src={`https://www.jpl.nasa.gov/images/asteroid-placeholder.jpg`} alt="Asteroid" className="w-full h-full object-cover opacity-80" onError={(e) => { e.currentTarget.style.display='none'; }} />
-                     <Zap className="w-5 h-5 text-white absolute" />
+                     <Zap className="w-5 h-5 text-white" />
                   </div>
                   <div>
                     <p className="text-[10px] text-indigo-400 uppercase tracking-widest font-black mb-1">Target Analysis</p>
@@ -313,7 +314,8 @@ export function SolarSystemVisualizer({ objects, selectedId, onSelect, simulatio
           <ambientLight intensity={0.2} />
           <Sun />
           <SimulationTimeManager simulationSpeed={simulationSpeed} setSimulatedDate={setSimulatedDate} />
-          <CameraFocusManager targetPos={selectedMeshRef.current} isSelected={!!selectedId} />
+          <CameraFocusManager targetRef={selectedMeshPos} isSelected={!!selectedId} />
+          <SelectedObjectTracker selectedObject={selectedObject} simulatedTime={simulatedDate.getTime()} renderObjects={renderObjects} targetRef={selectedMeshPos} />
           
           <Planet name="Mercury" color="#A5A5A5" radius={18} size={0.5} periodFactor={0.24} simulatedTime={simulatedDate.getTime()} />
           <Planet name="Venus" color="#E3BB76" radius={32} size={1.2} periodFactor={0.615} simulatedTime={simulatedDate.getTime()} />
