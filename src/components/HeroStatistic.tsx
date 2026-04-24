@@ -7,12 +7,26 @@ import { AlertTriangle, ShieldCheck, ChevronDown, ChevronUp, Radar } from "lucid
 
 interface HeroStatisticProps {
   objects: NearEarthObject[];
+  onTargetClick?: (id: string) => void;
 }
 
-export function HeroStatistic({ objects }: HeroStatisticProps) {
+export function HeroStatistic({ objects, onTargetClick }: HeroStatisticProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const hazardousCount = objects.filter((o) => o.is_potentially_hazardous_asteroid).length;
+  const hazardousObjects = objects.filter((o) => o.is_potentially_hazardous_asteroid);
+  const hazardousCount = hazardousObjects.length;
   const isDanger = hazardousCount > 0;
+
+  const handleTargetClick = (e: React.MouseEvent) => {
+    if (isDanger && onTargetClick) {
+      e.stopPropagation();
+      // Select the closest hazardous object
+      const sortedHazardous = [...hazardousObjects].sort((a, b) => 
+        parseFloat(a.close_approach_data[0].miss_distance.lunar) - 
+        parseFloat(b.close_approach_data[0].miss_distance.lunar)
+      );
+      onTargetClick(sortedHazardous[0].id);
+    }
+  };
 
   return (
     <motion.div
@@ -41,7 +55,10 @@ export function HeroStatistic({ objects }: HeroStatisticProps) {
           </div>
         </div>
 
-        <div className="flex items-baseline gap-3">
+        <div 
+          className={`flex items-baseline gap-3 transition-transform active:scale-95 ${isDanger ? 'cursor-pointer hover:opacity-80' : ''}`}
+          onClick={handleTargetClick}
+        >
           <span className="text-3xl sm:text-5xl font-black tracking-tighter text-white drop-shadow-2xl">{hazardousCount}</span>
           <div className="flex flex-col">
             <span className="text-aura-text-secondary text-[8px] sm:text-[10px] uppercase tracking-wider font-semibold">Targets</span>
