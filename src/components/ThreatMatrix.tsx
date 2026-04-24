@@ -23,14 +23,14 @@ export function ThreatMatrix({ objects }: ThreatMatrixProps) {
   });
 
   return (
-    <div className="fixed bottom-0 left-0 w-full z-40 px-6 pb-6 pointer-events-none">
-      <div className="max-w-7xl mx-auto w-full flex flex-col items-center">
+    <div className="fixed bottom-0 left-0 w-full z-40 px-0 sm:px-6 pb-0 sm:pb-6 pointer-events-none">
+      <div className="mx-auto w-full max-w-7xl sm:flex sm:flex-col sm:items-center">
         
         {/* The Trigger Dock */}
         <motion.button
           layoutId="threat-matrix"
           onClick={() => setIsExpanded(true)}
-          className={`pointer-events-auto bg-aura-bg/60 border border-white/10 backdrop-blur-3xl px-8 py-3 rounded-full flex items-center gap-4 shadow-[0_0_30px_rgba(0,0,0,0.5)] hover:bg-white/10 transition-all group ${isExpanded ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}
+          className={`pointer-events-auto bg-aura-bg/80 border-t sm:border border-white/10 backdrop-blur-3xl px-8 py-4 sm:py-3 rounded-none sm:rounded-full w-full sm:w-auto flex items-center justify-between sm:justify-center gap-4 shadow-[0_-10px_30px_rgba(0,0,0,0.5)] hover:bg-white/10 transition-all group ${isExpanded ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}
         >
           <div className="flex items-center gap-2">
             <Activity className="w-4 h-4 text-indigo-400" />
