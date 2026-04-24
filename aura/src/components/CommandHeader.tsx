@@ -3,17 +3,9 @@
 import { motion } from "framer-motion";
 import { format } from "date-fns";
 import { Orbit } from "lucide-react";
-import { useEffect, useState } from "react";
 
 export function CommandHeader() {
-  const [mounted, setMounted] = useState(false);
-  
-  useEffect(() => {
-    const timer = setTimeout(() => setMounted(true), 0);
-    return () => clearTimeout(timer);
-  }, []);
-
-  const date = mounted ? format(new Date(), "dd MMM yyyy") : "";
+  const date = format(new Date(), "dd MMM yyyy");
 
   return (
     <motion.header
@@ -30,7 +22,7 @@ export function CommandHeader() {
       </div>
 
       <div className="flex items-center gap-6 text-sm text-aura-text-secondary">
-        <span>{date}</span>
+        <span suppressHydrationWarning>{date}</span>
         <div className="flex items-center gap-2">
           <motion.div
             animate={{ opacity: [1, 0.4, 1] }}
