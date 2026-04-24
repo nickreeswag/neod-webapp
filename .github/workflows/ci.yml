@@ -1,0 +1,22 @@
+name: CI
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+  pull_request:
+    branches: [ "main", "develop" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Environment
+        run: echo "Configure appropriate environment (e.g. Node, Python) here"
+        
+      - name: Install Dependencies
+        run: echo "Run dependency installation here"
+        
+      - name: Run Tests
+        run: echo "Run tests here"
