@@ -7,6 +7,7 @@ import { HeroStatistic } from "@/components/HeroStatistic";
 import { SolarSystemVisualizer } from "@/components/SolarSystemVisualizer";
 import { ThreatMatrix } from "@/components/ThreatMatrix";
 import { SimulationControl } from "@/components/SimulationControl";
+import { TargetAnalysisPanel } from "@/components/TargetAnalysisPanel";
 
 interface DashboardUIProps {
   objectsToday: NearEarthObject[];
@@ -16,6 +17,8 @@ export function DashboardUI({ objectsToday }: DashboardUIProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [simulationSpeed, setSimulationSpeed] = useState<number>(1);
   const [simulatedDate, setSimulatedDate] = useState<Date>(new Date());
+
+  const selectedObject = objectsToday.find(o => o.id === selectedId) || null;
 
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-[#030712] selection:bg-indigo-500/30">
@@ -43,6 +46,12 @@ export function DashboardUI({ objectsToday }: DashboardUIProps) {
             </div>
           </div>
         </div>
+
+        {/* Target Analysis Overlay (Highest Priority) */}
+        <TargetAnalysisPanel 
+          selectedObject={selectedObject} 
+          onClose={() => setSelectedId(null)} 
+        />
 
         {/* Simulation Control (Mobile Collapsible) */}
         <div className="pointer-events-auto">
