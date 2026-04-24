@@ -1,6 +1,4 @@
-"use client";
-
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { NearEarthObject } from "@/types/nasa";
 import { CommandHeader } from "@/components/CommandHeader";
 import { HeroStatistic } from "@/components/HeroStatistic";
@@ -18,13 +16,24 @@ export function DashboardUI({ objectsToday }: DashboardUIProps) {
   const [simulationSpeed, setSimulationSpeed] = useState<number>(1);
   const [simulatedDate, setSimulatedDate] = useState<Date>(new Date());
 
-  const selectedObject = objectsToday.find(o => o.id === selectedId) || null;
+  const sortedObjects = useMemo(() => {
+    return [...objectsToday]
+      .sort((a, b) => {
+        return (
+          parseFloat(a.close_approach_data[0].miss_distance.lunar) -
+          parseFloat(b.close_approach_data[0].miss_distance.lunar)
+        );
+      })
+      .slice(0, 45);
+  }, [objectsToday]);
+
+  const selectedObject = sortedObjects.find(o => o.id === selectedId) || null;
 
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-[#030712] selection:bg-indigo-500/30">
       {/* Background Layer: The 3D Visualizer */}
       <SolarSystemVisualizer 
-        objects={objectsToday} 
+        objects={sortedObjects} 
         selectedId={selectedId}
         onSelect={setSelectedId}
         simulationSpeed={simulationSpeed}
@@ -50,6 +59,8 @@ export function DashboardUI({ objectsToday }: DashboardUIProps) {
         {/* Target Analysis Overlay (Highest Priority) */}
         <TargetAnalysisPanel 
           selectedObject={selectedObject} 
+          allObjects={sortedObjects}
+          onSelect={setSelectedId}
           onClose={() => setSelectedId(null)} 
         />
 

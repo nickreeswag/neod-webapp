@@ -199,14 +199,14 @@ function CameraFocusManager({ targetRef, isSelected }: { targetRef: React.Mutabl
   return null;
 }
 
-function SelectedObjectTracker({ selectedObject, simulatedTime, renderObjects, targetRef }: { selectedObject: NearEarthObject | undefined, simulatedTime: number, renderObjects: NearEarthObject[], targetRef: React.MutableRefObject<THREE.Vector3> }) {
+function SelectedObjectTracker({ selectedObject, simulatedTime, objects, targetRef }: { selectedObject: NearEarthObject | undefined, simulatedTime: number, objects: NearEarthObject[], targetRef: React.MutableRefObject<THREE.Vector3> }) {
   useFrame(() => {
     if (selectedObject) {
       const earthAngle = (simulatedTime / EARTH_YEAR_MS) * Math.PI * 2;
       const ex = Math.cos(earthAngle) * AU_IN_UNITS;
       const ez = Math.sin(earthAngle) * AU_IN_UNITS;
 
-      const asteroidIndex = renderObjects.findIndex(o => o.id === selectedObject.id);
+      const asteroidIndex = objects.findIndex(o => o.id === selectedObject.id);
       const orbitParams = {
         distFromEarthUnits: parseFloat(selectedObject.close_approach_data[0].miss_distance.lunar) / SCALE_UNIT,
         angleOffset: (asteroidIndex * 137.5) * (Math.PI / 180),
@@ -236,13 +236,7 @@ function SimulationTimeManager({ simulationSpeed, setSimulatedDate }: { simulati
 export function SolarSystemVisualizer({ objects, selectedId, onSelect, simulationSpeed, simulatedDate, setSimulatedDate }: SolarSystemVisualizerProps) {
   const selectedMeshPos = useRef<THREE.Vector3>(new THREE.Vector3());
   
-  const renderObjects = useMemo(() => {
-    return [...objects].sort((a, b) => {
-      return parseFloat(a.close_approach_data[0].miss_distance.lunar) - parseFloat(b.close_approach_data[0].miss_distance.lunar);
-    }).slice(0, 45);
-  }, [objects]);
-
-  const selectedObject = renderObjects.find(o => o.id === selectedId);
+  const selectedObject = objects.find(o => o.id === selectedId);
 
   return (
     <div className="fixed inset-0 z-0 w-full h-full bg-[#020617] overflow-hidden">
@@ -254,7 +248,7 @@ export function SolarSystemVisualizer({ objects, selectedId, onSelect, simulatio
           <Sun />
           <SimulationTimeManager simulationSpeed={simulationSpeed} setSimulatedDate={setSimulatedDate} />
           <CameraFocusManager targetRef={selectedMeshPos} isSelected={!!selectedId} />
-          <SelectedObjectTracker selectedObject={selectedObject} simulatedTime={simulatedDate.getTime()} renderObjects={renderObjects} targetRef={selectedMeshPos} />
+          <SelectedObjectTracker selectedObject={selectedObject} simulatedTime={simulatedDate.getTime()} objects={objects} targetRef={selectedMeshPos} />
           
           <Planet name="Mercury" color="#A5A5A5" radius={18} size={0.5} periodFactor={0.24} simulatedTime={simulatedDate.getTime()} />
           <Planet name="Venus" color="#E3BB76" radius={32} size={1.2} periodFactor={0.615} simulatedTime={simulatedDate.getTime()} />
@@ -266,7 +260,7 @@ export function SolarSystemVisualizer({ objects, selectedId, onSelect, simulatio
           <Planet name="Neptune" color="#4B70DD" radius={430} size={2.2} periodFactor={164.79} simulatedTime={simulatedDate.getTime()} />
           <Planet name="Pluto" color="#D0B8A1" radius={510} size={0.4} periodFactor={248.09} simulatedTime={simulatedDate.getTime()} />
 
-          {renderObjects.map((obj, i) => (
+          {objects.map((obj, i) => (
             <Asteroid 
               key={obj.id} 
               object={obj} 
